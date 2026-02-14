@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Transformaciones 2D - Graficacion</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <h2 id="titulo">Transformaciones Bidimensionales</h2>
+    
+    <canvas id="canvas"></canvas>
+
+    <div class="controls">
+        <div class="control-group">
+            <label>Punto de referencia:</label>
+            <select id="pivot">
+                <option value="center">Centro del objeto</option>
+                <option value="vertex">Vertice superior izquierdo (0,0)</option>
+                <option value="vertex">Vertice superior derecho (1,0)</option>
+                <option value="vertex">Vertice inferior izquierdo (0,1)</option>
+                <option value="vertex">Vertice inferior derecho (1,1)</option>
+            </select>
+        </div>
+
+        <!-- Opciones de Traslación -->
+        <div class="control-group">
+            <label>Traslacion (X, Y):</label>
+            <div style="display:flex">
+                <input type="number" id="transX" value="0" style="width:50px">
+                <input type="number" id="transY" value="0" style="width:50px">
+            </div>
+        </div>
+
+        <!-- Opciones de Escalamiento -->
+        <div class="control-group">
+            <label>Escalamiento (Factor):</label>
+            <div class="escalamiento-input-container">
+                <input type="range" id="scale" min="0.1" max="3" step="0.1" value="1" oninput="actualizarEscalamiento()">
+                <span id="valor-escalamiento" style="font-size: 0.9em;">1</span>
+            </div>
+        </div>
+
+        <!-- Opciones de Rotación -->
+        <div class="control-group">
+            <label>Rotacion (Grados):</label>
+            <div class="escalamiento-input-container">
+                <input type="range" id="rotate" min="0" max="360" value="0" oninput="actualizarRotacion()">
+                <span id="valor-rotacion" style="font-size: 0.9em;">0</span>
+            </div>
+        </div>
+
+        <!-- Opciones de Sesgado -->
+        <div class="control-group">
+            <label>Sesgado (X):</label>
+            <div class="escalamiento-input-container">
+                <input type="range" id="skew" min="-2" max="2" step="0.1" value="0" oninput="actualizarSesgado()">
+                <span id="valor-sesgado" style="font-size: 0.9em;">0</span>
+            </div>
+        </div>
+        
+        <!-- Limpiar estilos dados -->
+        <button onclick="resetear()" style="grid-column: span 2;">Resetear</button>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
