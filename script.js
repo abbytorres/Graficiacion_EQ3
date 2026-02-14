@@ -38,19 +38,32 @@ function draw() {
     // 1. TRASLACIoN: Mover al punto de origen del objeto + valores del usuario
     ctx.translate(obj.x + tx, obj.y + ty);
 
-    // 2. REFERENCIA (Pivot): Si es al centro, movemos el origen al centro del dibujo
+    // 2. REFERENCIA (Pivot): Aplicar offset según el punto de pivote seleccionado
     if (pivot === "center") {
         ctx.translate(obj.w / 2, obj.h / 2);
+    } else if (pivot === "vertex-tr") {
+        ctx.translate(obj.w, 0);
+    } else if (pivot === "vertex-bl") {
+        ctx.translate(0, obj.h);
+    } else if (pivot === "vertex-br") {
+        ctx.translate(obj.w, obj.h);
     }
+    // vertex-tl no necesita translate (es 0,0)
 
     // 3. APLICAR TRANSFORMACIONES RESTANTES
     ctx.rotate(r);
     ctx.scale(s, s);
     ctx.transform(1, 0, sk, 1, 0, 0); // Matriz para Sesgado (Skew)
 
-    // 4. VOLVER DEL PIVOT: Si movimos al centro, regresamos para dibujar
+    // 4. VOLVER DEL PIVOT: Si movimos el origen, regresamos para dibujar
     if (pivot === "center") {
         ctx.translate(-obj.w / 2, -obj.h / 2);
+    } else if (pivot === "vertex-tr") {
+        ctx.translate(-obj.w, 0);
+    } else if (pivot === "vertex-bl") {
+        ctx.translate(0, -obj.h);
+    } else if (pivot === "vertex-br") {
+        ctx.translate(-obj.w, -obj.h);
     }
 
     // Dibujar el objeto
