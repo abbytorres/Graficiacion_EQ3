@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GeoTrace — Polígonos en Mapa</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">
+    <div class="logo-dot"></div>
+    GeoTrace
+  </div>
+  <div class="header-controls">
+    <span id="status-pill">LISTO</span>
+  </div>
+
+  <!-- API KEY BANNER -->
+  <div id="api-banner">
+    <span>🔑 Google Maps API Key:</span>
+    <input type="text" id="api-key-input" placeholder="Pega tu API Key aquí…" />
+    <button id="load-map-btn" onclick="loadGoogleMaps()">CARGAR MAPA</button>
+    <span style="color:rgba(255,255,255,.5); font-size:0.7rem">→ console.cloud.google.com</span>
+  </div>
+</header>
+
+<!-- WORKSPACE -->
+<div class="workspace">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+
+    <!-- ACCIONES -->
+    <div class="sidebar-section">
+      <div class="section-label">Acciones</div>
+      <button class="btn btn-primary" onclick="startDrawing()">＋ Dibujar Polígono</button>
+      <button class="btn btn-secondary" onclick="finishPolygon()">✓ Finalizar Polígono</button>
+      <button class="btn btn-danger" onclick="clearAll()">✕ Limpiar Todo</button>
+    </div>
+
+    <!-- COLOR -->
+    <div class="sidebar-section">
+      <div class="section-label">Color de Relleno</div>
+      <div class="color-grid">
+        <div class="color-swatch active" style="background:#00e5ff"  data-color="#00e5ff"  onclick="selectColor(this)"></div>
+        <div class="color-swatch"        style="background:#ff6b35"  data-color="#ff6b35"  onclick="selectColor(this)"></div>
+        <div class="color-swatch"        style="background:#7c3aed"  data-color="#7c3aed"  onclick="selectColor(this)"></div>
+        <div class="color-swatch"        style="background:#22c55e"  data-color="#22c55e"  onclick="selectColor(this)"></div>
+        <div class="color-swatch"        style="background:#f59e0b"  data-color="#f59e0b"  onclick="selectColor(this)"></div>
+        <div class="color-swatch"        style="background:#ef4444"  data-color="#ef4444"  onclick="selectColor(this)"></div>
+        <div class="color-swatch"        style="background:#ec4899"  data-color="#ec4899"  onclick="selectColor(this)"></div>
+        <div class="color-swatch"        style="background:#06b6d4"  data-color="#06b6d4"  onclick="selectColor(this)"></div>
+        <div class="color-swatch"        style="background:#84cc16"  data-color="#84cc16"  onclick="selectColor(this)"></div>
+        <div class="color-swatch"        style="background:#ffffff"  data-color="#ffffff"  onclick="selectColor(this)"></div>
+      </div>
+      <div class="custom-color-row">
+        <label>Color personalizado</label>
+        <input type="color" id="custom-color" value="#00e5ff" oninput="customColor(this)" />
+      </div>
+      <div class="slider-row" style="margin-top:14px">
+        <label>Opacidad</label>
+        <input type="range" id="opacity-slider" min="0" max="100" value="35" oninput="updateOpacity(this)" />
+        <span class="slider-val" id="opacity-val">35%</span>
+      </div>
+      <div class="slider-row" style="margin-top:8px">
+        <label>Borde</label>
+        <input type="range" id="stroke-slider" min="1" max="8" value="2" oninput="updateStroke(this)" />
+        <span class="slider-val" id="stroke-val">2px</span>
+      </div>
+    </div>
+
+    <!-- ZONAS PREDEFINIDAS -->
+    <div class="sidebar-section">
+      <div class="section-label">Zonas Predefinidas</div>
+      <div class="zone-list">
+        <div class="zone-item" onclick="loadZone('cdmx')">
+          <div class="zone-dot" style="background:#00e5ff"></div>
+          Ciudad de México
+        </div>
+        <div class="zone-item" onclick="loadZone('newyork')">
+          <div class="zone-dot" style="background:#ff6b35"></div>
+          Nueva York, Central Park
+        </div>
+        <div class="zone-item" onclick="loadZone('barcelona')">
+          <div class="zone-dot" style="background:#7c3aed"></div>
+          Barcelona, Barrio Gótico
+        </div>
+        <div class="zone-item" onclick="loadZone('bogota')">
+          <div class="zone-dot" style="background:#22c55e"></div>
+          Bogotá, La Candelaria
+        </div>
+        <div class="zone-item" onclick="loadZone('paris')">
+          <div class="zone-dot" style="background:#f59e0b"></div>
+          París, Île de la Cité
+        </div>
+      </div>
+    </div>
+
+    <!-- LISTA DE POLÍGONOS -->
+    <div class="sidebar-section" style="flex:1">
+      <div class="section-label">Polígonos Dibujados</div>
+      <div id="polygon-list">
+        <p style="font-size:0.78rem; color:var(--muted);">Ningún polígono aún.</p>
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- MAP AREA -->
+  <div class="map-container">
+    <div id="map-placeholder">
+      <div class="ph-icon">🗺️</div>
+      <p>Ingresa tu API Key de Google Maps para comenzar</p>
+      <p style="font-size:0.78rem">Visita console.cloud.google.com para obtener una</p>
+    </div>
+    <div id="map" style="display:none"></div>
+    <div id="instructions">
+      <div class="tip-title">✏️ Modo Dibujo Activo</div>
+      <kbd>Click</kbd> para agregar punto<br>
+      <kbd>Doble click</kbd> para cerrar<br>
+      <kbd>✓ Finalizar</kbd> para guardar<br>
+      <kbd>Esc</kbd> para cancelar
+    </div>
+  </div>
+
+</div>
+<script src="script.js"></script>
+</body>
+</html>
