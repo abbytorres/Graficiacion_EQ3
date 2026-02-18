@@ -12,11 +12,12 @@ let mapsLoaded = false;
 
 /* ─────────────────────────────────────────
    LOAD GOOGLE MAPS DYNAMICALLY
-───────────────────────────────────────── */
+───────────────────────────────────────── 
 function loadGoogleMaps() {
     const key = document.getElementById('api-key-input').value.trim();
-    if (!key) { alert('Por favor ingresa una API Key válida.'); return; }
-    if (mapsLoaded) { alert('El mapa ya está cargado. Recarga la página para usar otra key.'); return; }
+    console.log("Valor detectado:", key);
+    if (!key) { alert('Por favor ingresa una API Key valida.'); return; }
+    if (mapsLoaded) { alert('El mapa ya esta cargado. Recarga la pagina para usar otra key.'); return; }
 
     const btn = document.getElementById('load-map-btn');
     btn.textContent = 'CARGANDO…';
@@ -37,6 +38,65 @@ function loadGoogleMaps() {
 /* ─────────────────────────────────────────
    INIT MAP
 ───────────────────────────────────────── */
+function loadGoogleMaps() {
+    const input = document.getElementById('api-key-input');
+
+    if (!input) {
+        alert("No se encontró el input de la API Key.");
+        return;
+    }
+
+    const key = input.value.trim();
+    console.log("API detectada:", key);
+
+    if (key === "") {
+        alert('Por favor ingresa una API Key válida.');
+        return;
+    }
+
+    if (mapsLoaded) {
+        alert('El mapa ya está cargado. Recarga la página para usar otra key.');
+        return;
+    }
+
+    const btn = document.getElementById('load-map-btn');
+    btn.textContent = 'CARGANDO…';
+    btn.disabled = true;
+
+    window.initMap = function () {
+
+        document.getElementById("map").style.display = "block";
+        document.getElementById("map-placeholder").style.display = "none";
+
+        map = new google.maps.Map(document.getElementById("map"), {
+            center: { lat: 19.4326, lng: -99.1332 },
+            zoom: 12,
+        });
+
+        mapsLoaded = true;
+    };
+
+    const script = document.createElement('script');
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${key}&libraries=drawing&callback=initMap`;
+    script.async = true;
+    script.defer = true;
+
+    script.onerror = function () {
+        btn.textContent = 'ERROR — REINTENTAR';
+        btn.disabled = false;
+        alert('No se pudo cargar Google Maps. Verifica:\n\n1) Que la API Key sea correcta\n2) Que "Maps JavaScript API" esté habilitada\n3) Que tengas facturación activa\n4) Que localhost esté permitido en restricciones');
+    };
+
+    document.head.appendChild(script);
+}
+
+// IMPORTANTE si usan type="module"
+window.loadGoogleMaps = loadGoogleMaps;
+
+// Asignar evento correctamente
+document.getElementById('load-map-btn').addEventListener('click', loadGoogleMaps);
+
+/*
 function initMap() {
     mapsLoaded = true;
     document.getElementById('map-placeholder').style.display = 'none';
@@ -94,12 +154,32 @@ function getPolyOptions() {
 }
 
 function startDrawing() {
-    if (!mapsLoaded) { alert('Primero carga el mapa con tu API Key.'); return; }
-    isDrawing = true;
-    drawingManager.setDrawingMode(google.maps.drawing.OverlayType.POLYGON);
-    drawingManager.set('polygonOptions', getPolyOptions());
-    setStatus('DIBUJANDO', 'drawing');
-    document.getElementById('instructions').classList.add('visible');
+
+    if (!map) {
+        alert("Primero carga el mapa.");
+        return;
+    }
+
+    drawingManager = new google.maps.drawing.DrawingManager({
+        drawingMode: google.maps.drawing.OverlayType.POLYGON,
+        drawingControl: false,
+        polygonOptions: {
+            fillColor: "#00e5ff",
+            fillOpacity: 0.35,
+            strokeWeight: 2,
+            clickable: true,
+            editable: true,
+            zIndex: 1
+        }
+    });
+
+    drawingManager.setMap(map);
+
+    google.maps.event.addListener(drawingManager, 'overlaycomplete', function (event) {
+        currentPolygon = event.overlay;
+        polygons.push(currentPolygon);
+        drawingManager.setDrawingMode(null);
+    });
 }
 
 function cancelDrawing() {
@@ -110,8 +190,16 @@ function cancelDrawing() {
 }
 
 function finishPolygon() {
-    // Triggers 'polygoncomplete' if user double-clicked; otherwise just cancel drawing mode.
-    cancelDrawing();
+
+    if (!currentPolygon) {
+        alert("No hay polígono en dibujo.");
+        return;
+    }
+
+    currentPolygon.setEditable(false);
+    currentPolygon = null;
+
+    alert("Polígono guardado.");
 }
 
 function onPolygonComplete(polygon) {
