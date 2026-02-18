@@ -38,6 +38,30 @@ function loadGoogleMaps() {
 /* ─────────────────────────────────────────
    INIT MAP
 ───────────────────────────────────────── */
+// Obtener ubicación del dispositivo
+function getUserLocation() {
+    return new Promise((resolve) => {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                position => {
+                    const { latitude, longitude } = position.coords;
+                    console.log('Ubicación obtenida:', latitude, longitude);
+                    resolve({ lat: latitude, lng: longitude });
+                },
+                error => {
+                    console.warn('Error obteniendo ubicación:', error);
+                    // Ubicación por defecto (CDMX)
+                    resolve({ lat: 19.4326, lng: -99.1332 });
+                }
+            );
+        } else {
+            console.warn('Geolocalización no soportada por este navegador.');
+            resolve({ lat: 19.4326, lng: -99.1332 });
+        }
+    });
+}
+
+
 function loadGoogleMaps() {
     const input = document.getElementById('api-key-input');
 
@@ -63,13 +87,14 @@ function loadGoogleMaps() {
     btn.textContent = 'CARGANDO…';
     btn.disabled = true;
 
-    window.initMap = function () {
-
+    window.initMap = async function () {
         document.getElementById("map").style.display = "block";
         document.getElementById("map-placeholder").style.display = "none";
 
+        let { lat, lng } = await getUserLocation();
+
         map = new google.maps.Map(document.getElementById("map"), {
-            center: { lat: 19.4326, lng: -99.1332 },
+            center: { lat: lat || 19.4326, lng: lng || -99.1332 },
             zoom: 12,
         });
 
@@ -96,47 +121,6 @@ window.loadGoogleMaps = loadGoogleMaps;
 // Asignar evento correctamente
 document.getElementById('load-map-btn').addEventListener('click', loadGoogleMaps);
 
-/*
-function initMap() {
-    mapsLoaded = true;
-    document.getElementById('map-placeholder').style.display = 'none';
-    const mapEl = document.getElementById('map');
-    mapEl.style.display = 'block';
-
-    document.getElementById('api-banner').style.background = 'rgba(34,197,94,.85)';
-    document.getElementById('load-map-btn').textContent = '✓ CARGADO';
-
-    map = new google.maps.Map(mapEl, {
-        center: { lat: 19.4326, lng: -99.1332 },
-        zoom: 12,
-        mapTypeId: 'roadmap',
-        styles: darkMapStyle(),
-        disableDefaultUI: false,
-        zoomControl: true,
-        mapTypeControl: true,
-        streetViewControl: true,
-        fullscreenControl: true,
-    });
-
-    // Drawing Manager
-    drawingManager = new google.maps.drawing.DrawingManager({
-        drawingMode: null,
-        drawingControl: false,
-        polygonOptions: getPolyOptions(),
-    });
-    drawingManager.setMap(map);
-
-    // Listen for completed polygons
-    google.maps.event.addListener(drawingManager, 'polygoncomplete', onPolygonComplete);
-
-    // ESC to cancel
-    document.addEventListener('keydown', e => {
-        if (e.key === 'Escape' && isDrawing) cancelDrawing();
-    });
-
-    document.getElementById('instructions').classList.remove('visible');
-}
-
 /* ─────────────────────────────────────────
    DRAWING CONTROLS
 ───────────────────────────────────────── */
@@ -154,31 +138,25 @@ function getPolyOptions() {
 }
 
 function startDrawing() {
-
     if (!map) {
         alert("Primero carga el mapa.");
         return;
     }
 
+    isDrawing = true;
+    setStatus('DIBUJANDO', '');
+    document.getElementById('instructions').classList.add('visible');
+
     drawingManager = new google.maps.drawing.DrawingManager({
         drawingMode: google.maps.drawing.OverlayType.POLYGON,
         drawingControl: false,
-        polygonOptions: {
-            fillColor: "#00e5ff",
-            fillOpacity: 0.35,
-            strokeWeight: 2,
-            clickable: true,
-            editable: true,
-            zIndex: 1
-        }
+        polygonOptions: getPolyOptions()
     });
 
     drawingManager.setMap(map);
 
     google.maps.event.addListener(drawingManager, 'overlaycomplete', function (event) {
-        currentPolygon = event.overlay;
-        polygons.push(currentPolygon);
-        drawingManager.setDrawingMode(null);
+        onPolygonComplete(event.overlay);
     });
 }
 
@@ -236,19 +214,34 @@ function clearAll() {
 /* ─────────────────────────────────────────
    SIDEBAR LIST
 ───────────────────────────────────────── */
+function zoomToPolygon(index) {
+    const poly = polygons[index];
+    if (poly && poly.polygon && map) {
+        const bounds = new google.maps.LatLngBounds();
+        poly.polygon.getPath().forEach(latlng => {
+            bounds.extend(latlng);
+        });
+        map.fitBounds(bounds);
+    }
+}
+
 function renderPolyList() {
     const el = document.getElementById('polygon-list');
     if (polygons.length === 0) {
         el.innerHTML = '<p style="font-size:0.78rem; color:var(--muted);">Ningún polígono aún.</p>';
         return;
     }
-    el.innerHTML = polygons.map((p, i) => `
-    <div class="poly-item" id="poly-item-${i}">
-      <div class="poly-dot" style="background:${p.color}; box-shadow:0 0 6px ${p.color}55"></div>
-      <span class="poly-name">${p.name}</span>
-      <button class="poly-delete" onclick="deletePolygon(${i})" title="Eliminar">×</button>
-    </div>
-  `).join('');
+    el.innerHTML = polygons.map((p, i) => {
+        const color = (p && p.color) || currentColor;
+        const name = (p && p.name) || `Polígono-${i + 1}`;
+        return `
+        <div class="poly-item" id="poly-item-${i}" onclick="zoomToPolygon(${i})" style="cursor: pointer;">
+          <div class="poly-dot" style="background:${color}; box-shadow:0 0 6px ${color}55"></div>
+          <span class="poly-name">${name}</span>
+          <button class="poly-delete" onclick="deletePolygon(${i}); event.stopPropagation();" title="Eliminar">×</button>
+        </div>
+      `;
+    }).join('');
 }
 
 function deletePolygon(index) {
