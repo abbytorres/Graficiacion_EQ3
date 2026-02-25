@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fractal - Copo de Nieve de Koch</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="contenedor">
+        <h1>╔ Fractal — Copo de Nieve de Koch ╗</h1>
+
+        <!-- CONTROLES -->
+        <div class="controles">
+            <div class="control-grupo">
+                <label>Iteración (Nivel de complejidad):</label>
+                <input type="range" id="slider-iteracion" min="0" max="7" value="3">
+                <div class="valor-slider">Iteración: <span id="valor-iteracion">3</span></div>
+            </div>
+
+            <div class="botones-grid">
+                <button id="btn-relleno">✓ Relleno ON</button>
+                <button id="btn-animar">▶ Animar</button>
+            </div>
+        </div>
+
+        <!-- PANEL PRINCIPAL: LIENZO + ESTADÍSTICAS -->
+        <div class="panel-principal">
+            <div class="lienzo-contenedor">
+                <canvas id="canvas-principal" width="500" height="500"></canvas>
+            </div>
+
+            <div class="panel-stats">
+                <div class="stats-titulo">── Estadísticas ──</div>
+                <div class="stats-fila">
+                    <span class="stats-label">Iteración:</span>
+                    <span class="stats-valor" id="stat-iteracion">3</span>
+                </div>
+                <div class="stats-fila">
+                    <span class="stats-label">Segmentos:</span>
+                    <span class="stats-valor" id="stat-segmentos">0</span>
+                </div>
+                <div class="stats-fila">
+                    <span class="stats-label">Long. segmento:</span>
+                    <span class="stats-valor" id="stat-long-seg">0.0000</span>
+                </div>
+                <div class="stats-fila">
+                    <span class="stats-label">Perímetro:</span>
+                    <span class="stats-valor" id="stat-perimetro">0.0000</span>
+                </div>
+                <div class="stats-fila">
+                    <span class="stats-label">Área aprox.:</span>
+                    <span class="stats-valor" id="stat-area">0.0000</span>
+                </div>
+                <div class="stats-fila">
+                    <span class="stats-label">Dim. Hausdorff:</span>
+                    <span class="stats-valor" id="stat-dim">0.0000</span>
+                </div>
+                <div class="formula">D = log(4) / log(3)</div>
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
