@@ -64,12 +64,32 @@ function animate() {
     if (keys.ArrowRight) cameraAngle += rotationSpeed;
     if (keys.ArrowLeft) cameraAngle -= rotationSpeed;
 
-    // Control de desplazamiento del avatar (WASD)
-    // Movimiento independiente del avatar (sin rotación)
-    if (keys.w) avatar.position.z -= speed;
-    if (keys.s) avatar.position.z += speed;
-    if (keys.a) avatar.position.x -= speed;
-    if (keys.d) avatar.position.x += speed;
+    // Control de desplazamiento del avatar (WASD) - basado en la dirección de la cámara
+    // Calcular dirección adelante (donde mira el avatar)
+    const forwardX = Math.sin(cameraAngle);
+    const forwardZ = Math.cos(cameraAngle);
+    
+    // Calcular dirección a la izquierda (perpendicular a adelante)
+    const leftX = Math.cos(cameraAngle);
+    const leftZ = -Math.sin(cameraAngle);
+
+    // Aplicar movimiento en la dirección de la cámara
+    if (keys.w) {
+        avatar.position.x -= forwardX * speed;
+        avatar.position.z -= forwardZ * speed;
+    }
+    if (keys.s) {
+        avatar.position.x += forwardX * speed;
+        avatar.position.z += forwardZ * speed;
+    }
+    if (keys.a) {
+        avatar.position.x -= leftX * speed;
+        avatar.position.z -= leftZ * speed;
+    }
+    if (keys.d) {
+        avatar.position.x += leftX * speed;
+        avatar.position.z += leftZ * speed;
+    }
 
     // Movimiento del enemigo (patrón circular)
     const time = Date.now() * 0.001;
