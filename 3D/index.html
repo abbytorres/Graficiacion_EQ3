@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Three.js Transform Lab</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #111; }
+        canvas { display: block; }
+        #instructions {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: white;
+            font-family: sans-serif;
+            pointer-events: none;
+            text-shadow: 1px 1px 2px black;
+        }
+        #resetBtn {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            padding: 10px 20px;
+            background-color: #ff0055;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            transition: background-color 0.2s;
+            pointer-events: auto;
+        }
+        #resetBtn:hover {
+            background-color: #cc0044;
+        }
+        #resetBtn:active {
+            transform: scale(0.95);
+        }
+    </style>
+</head>
+<body>
+    <div id="instructions">
+        <h2>Visualizador de Transformaciones 3D</h2>
+        <p>Usa el panel para alterar la matriz del objeto.</p>
+    </div>
+    <button id="resetBtn">Resetear</button>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "gui": "https://unpkg.com/lil-gui@0.19.1/dist/lil-gui.esm.js"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { GUI } from 'gui';
+
+        // --- CONFIGURACIÓN BÁSICA ---
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // --- ILUMINACIÓN Y ESCENA ---
+        const light = new THREE.DirectionalLight(0xffffff, 1);
+        light.position.set(5, 5, 5);
+        scene.add(light, new THREE.AmbientLight(0x404040));
+        scene.add(new THREE.GridHelper(10, 10));
+
+        // --- EL OBJETO (Cubo) ---
+        const geometry = new THREE.BoxGeometry(1, 1, 1);
+        const material = new THREE.MeshPhongMaterial({ color: 0x00ff88, wireframe: false });
+        const cube = new THREE.Mesh(geometry, material);
+        scene.add(cube);
+
+        camera.position.z = 5;
+        camera.position.y = 2;
+        camera.lookAt(0,0,0);
+
+        // --- LÓGICA DE TRANSFORMACIÓN ---
+        // El "Sesgado" (Shear) no es una propiedad directa en Three.js, 
+        // así que manipularemos la Matriz de Transformación manualmente.
+        
+        const params = {
+            posX: 0, posY: 0, posZ: 0,
+            rotX: 0, rotY: 0, rotZ: 0,
+            scale: 1,
+            shearXY: 0, shearXZ: 0, shearYX: 0, shearYZ: 0, shearZX: 0, shearZY: 0
+        };
+
+        function updateMatrix() {
+            // 1. Resetear matriz a la identidad
+            cube.matrix.identity();
+
+            // 2. Aplicar Traslación
+            const translation = new THREE.Matrix4().makeTranslation(params.posX, params.posY, params.posZ);
+            
+            // 3. Aplicar Rotación (Euler)
+            const rotation = new THREE.Matrix4().makeRotationFromEuler(
+                new THREE.Euler(params.rotX, params.rotY, params.rotZ)
+            );
+
+            // 4. Aplicar Escalamiento
+            const scale = new THREE.Matrix4().makeScale(params.scale, params.scale, params.scale);
+
+            // 5. Aplicar Sesgado (Shear)
+            // La matriz de shear se define modificando los componentes off-diagonal
+            const shear = new THREE.Matrix4().set(
+                1,             params.shearXY, params.shearXZ, 0,
+                params.shearYX, 1,             params.shearYZ, 0,
+                params.shearZX, params.shearZY, 1,             0,
+                0,             0,              0,             1
+            );
+
+            // Combinar todo: Matriz = T * R * S * Shear
+            cube.matrix.multiply(translation);
+            cube.matrix.multiply(rotation);
+            cube.matrix.multiply(scale);
+            cube.matrix.multiply(shear);
+
+            // Bloquear la actualización automática para usar nuestra matriz manual
+            cube.matrixAutoUpdate = false;
+        }
+
+        // --- INTERFAZ (GUI) ---
+        const gui = new GUI();
+        
+        const f1 = gui.addFolder('Traslación');
+        f1.add(params, 'posX', -3, 3).onChange(updateMatrix);
+        f1.add(params, 'posY', -3, 3).onChange(updateMatrix);
+        f1.add(params, 'posZ', -3, 3).onChange(updateMatrix);
+
+        const f2 = gui.addFolder('Rotación (Radianes)');
+        f2.add(params, 'rotX', 0, Math.PI * 2).onChange(updateMatrix);
+        f2.add(params, 'rotY', 0, Math.PI * 2).onChange(updateMatrix);
+        f2.add(params, 'rotZ', 0, Math.PI * 2).onChange(updateMatrix);
+
+        const f3 = gui.addFolder('Escalamiento');
+        f3.add(params, 'scale', 0.1, 3).onChange(updateMatrix);
+
+        const f4 = gui.addFolder('Sesgado (Shear)');
+        f4.add(params, 'shearXY', -2, 2).onChange(updateMatrix);
+        f4.add(params, 'shearXZ', -2, 2).onChange(updateMatrix);
+        f4.add(params, 'shearYX', -2, 2).onChange(updateMatrix);
+        f4.add(params, 'shearYZ', -2, 2).onChange(updateMatrix);
+
+        // --- BOTÓN RESETEAR ---
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            params.posX = 0;
+            params.posY = 0;
+            params.posZ = 0;
+            params.rotX = 0;
+            params.rotY = 0;
+            params.rotZ = 0;
+            params.scale = 1;
+            params.shearXY = 0;
+            params.shearXZ = 0;
+            params.shearYX = 0;
+            params.shearYZ = 0;
+            params.shearZX = 0;
+            params.shearZY = 0;
+            
+            // Actualizar todos los controles de la GUI
+            gui.controllers.forEach(controller => controller.updateDisplay());
+            gui.folders.forEach(folder => {
+                folder.controllers.forEach(controller => controller.updateDisplay());
+            });
+            
+            updateMatrix();
+        });
+
+        // --- RENDER LOOP ---
+        function animate() {
+            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        animate();
+    </script>
+</body>
+</html>
