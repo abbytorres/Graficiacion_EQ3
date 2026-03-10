@@ -19,73 +19,14 @@
 </head>
 <body>
     <div id="instrucciones">
-        Use las flechas o WASD para moverse<br>
-        Perspectiva: Cámara en Tercera Persona
+        <strong>WASD</strong> para mover<br>
+        <strong>← →</strong> para girar cámara<br>
+        <strong>Objetivo:</strong> Toca la esfera roja ⭕
+    </div>
+    <div id="colisionInfo" style="position: absolute; top: 100px; left: 10px; color: #00ff00; font-family: sans-serif; background: rgba(0,0,0,0.5); padding: 10px; pointer-events: none;">
+        Colisiones: 0
     </div>
 
-    <script type="module">
-        import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.module.min.js';
-
-        // 1. Escena y Cámara (Perspectiva)
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        document.body.appendChild(renderer.domElement);
-
-        // 2. Elementos del mundo
-        // Plano (Suelo) con rejilla para enfatizar la perspectiva
-        const gridHelper = new THREE.GridHelper(100, 50, 0x00ff00, 0x444444);
-        scene.add(gridHelper);
-
-        // Avatar (El "Jugador")
-        const geometry = new THREE.BoxGeometry(1, 1, 1);
-        const material = new THREE.MeshPhongMaterial({ color: 0x00aaff });
-        const avatar = new THREE.Mesh(geometry, material);
-        avatar.position.y = 0.5; // Apoyado sobre el plano
-        scene.add(avatar);
-
-        // Iluminación
-        const light = new THREE.DirectionalLight(0xffffff, 1);
-        light.position.set(5, 5, 5).normalize();
-        scene.add(light);
-        scene.add(new THREE.AmbientLight(0x404040));
-
-        // 3. Lógica de Movimiento
-        const keys = { w: false, a: false, s: false, d: false, ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false };
-        const speed = 0.15;
-
-        window.addEventListener('keydown', (e) => keys[e.key] = true);
-        window.addEventListener('keyup', (e) => keys[e.key] = false);
-
-        // 4. Animación y Renderizado
-        function animate() {
-            requestAnimationFrame(animate);
-
-            // Control de desplazamiento
-            if (keys.w || keys.ArrowUp)    avatar.position.z -= speed;
-            if (keys.s || keys.ArrowDown)  avatar.position.z += speed;
-            if (keys.a || keys.ArrowLeft)  avatar.position.x -= speed;
-            if (keys.d || keys.ArrowRight) avatar.position.x += speed;
-
-            // Seguimiento de cámara (Perspectiva de tercera persona)
-            camera.position.x = avatar.position.x;
-            camera.position.y = avatar.position.y + 3;
-            camera.position.z = avatar.position.z + 6;
-            camera.lookAt(avatar.position);
-
-            renderer.render(scene, camera);
-        }
-
-        animate();
-
-        // Ajuste de ventana
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
-    </script>
+    <script type="module" src="script.js"></script>
 </body>
 </html>
