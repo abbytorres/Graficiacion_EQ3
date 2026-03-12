@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>🌍 AR World — Primera Persona</title>
+    <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <!-- Loading Screen -->
+    <div id="loading-screen">
+        <div class="logo">AR WORLD</div>
+        <div class="subtitle">primera persona · escena animada</div>
+        <div class="bar-container">
+            <div class="bar-fill"></div>
+        </div>
+    </div>
+
+    <!-- Vignette overlay -->
+    <div id="vignette"></div>
+
+    <!-- HUD -->
+    <div id="hud">
+        <div id="crosshair"></div>
+        <div id="compass">N &nbsp;·&nbsp; NE &nbsp;·&nbsp; E &nbsp;·&nbsp; SE &nbsp;·&nbsp; S &nbsp;·&nbsp; SO
+            &nbsp;·&nbsp; O</div>
+
+        <div id="info-panel">
+            <div><span class="label">MUNDO &nbsp;</span><span class="value">NEBULA-7</span></div>
+            <div><span class="label">HORA &nbsp;&nbsp;</span><span class="value" id="clock">00:00</span></div>
+            <div><span class="label">OBJETOS</span><span class="value"> 12 activos</span></div>
+            <div style="margin-top:6px; color:#ffffff33; font-size:0.55rem;">AFRAME v1.4 · WEBGL</div>
+        </div>
+
+        <div id="controls-hint">
+            <div class="hint-key"><span>W A S D</span> mover</div>
+            <div class="hint-key"><span>MOUSE</span> mirar</div>
+            <div class="hint-key"><span>CLICK</span> capturar cursor</div>
+        </div>
+
+        <div id="mobile-hint">ARRASTRA PARA MIRAR · BOTONES PARA MOVER</div>
+    </div>
+
+    <!-- ======================= A-FRAME SCENE ======================= -->
+    <a-scene fog="type: exponential; color: #0d0d1a; density: 0.02"
+        renderer="antialias: true; colorManagement: true; physicallyCorrectLights: true" background="color: #0d0d1a"
+        stats="false">
+
+        <!-- ── Assets ── -->
+        <a-assets>
+            <!-- No external assets needed, everything procedural -->
+        </a-assets>
+
+        <!-- ══════════════════════════════════════════
+       CÁMARA PRIMERA PERSONA
+  ══════════════════════════════════════════ -->
+        <a-entity id="rig" position="0 0 8" wasd-controls="acceleration: 25; fly: false">
+            <a-camera look-controls="pointerLockEnabled: true" fov="80" near="0.05" far="300">
+                <!-- Arma / objeto en mano -->
+                <a-entity position="0.3 -0.35 -0.6" rotation="0 -10 0">
+                    <!-- cuerpo del "dispositivo" -->
+                    <a-box width="0.08" height="0.05" depth="0.22" color="#1a1a2e" metalness="0.9" roughness="0.2">
+                    </a-box>
+                    <!-- pantalla del dispositivo -->
+                    <a-plane position="0 0.031 0" rotation="-90 0 0" width="0.065" height="0.12" color="#00ffe7"
+                        opacity="0.9" material="emissive: #00ffe7; emissiveIntensity: 0.4; side: front">
+                    </a-plane>
+                    <!-- luz del dispositivo -->
+                    <a-light type="point" color="#00ffe7" intensity="0.6" distance="2" position="0 0.1 0"></a-light>
+                </a-entity>
+            </a-camera>
+        </a-entity>
+
+        <!-- ══════════════════════════════════════════
+       ILUMINACIÓN
+  ══════════════════════════════════════════ -->
+        <!-- Luz ambiental tenue -->
+        <a-light type="ambient" color="#1a0a2e" intensity="0.4"></a-light>
+
+        <!-- Luna / sol lejano -->
+        <a-light type="directional" color="#a0c4ff" intensity="0.6" position="-10 30 -20" cast-shadow="true">
+        </a-light>
+
+        <!-- Punto de luz cálido en el centro -->
+        <a-light type="point" color="#ff6b35" intensity="1.2" distance="20" position="0 4 0"
+            animation="property: intensity; to: 1.8; dir: alternate; dur: 2000; loop: true; easing: easeInOutSine">
+        </a-light>
+
+        <!-- ══════════════════════════════════════════
+       SUELO — GRID FUTURISTA
+  ══════════════════════════════════════════ -->
+        <!-- Plano base oscuro -->
+        <a-plane position="0 0 0" rotation="-90 0 0" width="200" height="200" color="#080812" metalness="0.3"
+            roughness="0.8"></a-plane>
+
+        <!-- Grid lines X -->
+        <a-entity id="grid">
+            <!-- Se genera via JS debajo -->
+        </a-entity>
+
+        <!-- ══════════════════════════════════════════
+       CIELO — CÚPULA ESTELAR
+  ══════════════════════════════════════════ -->
+        <a-sky color="#060610"></a-sky>
+
+        <!-- Estrellas (muchos puntos pequeños) -->
+        <a-entity id="stars"></a-entity>
+
+        <!-- ══════════════════════════════════════════
+       PERSONAJE ANIMADO CENTRAL — "GUARDIÁN"
+  ══════════════════════════════════════════ -->
+        <a-entity id="guardian" position="0 0 -5">
+
+            <!-- Cuerpo principal -->
+            <a-cylinder id="guardian-body" position="0 1.1 0" radius="0.35" height="0.9" color="#7c3aed" metalness="0.8"
+                roughness="0.2"
+                animation__bob="property: position; from: 0 1.1 0; to: 0 1.4 0; dir: alternate; dur: 1800; loop: true; easing: easeInOutSine"
+                animation__rotate="property: rotation; to: 0 360 0; dur: 8000; loop: true; easing: linear"></a-cylinder>
+
+            <!-- Cabeza -->
+            <a-sphere id="guardian-head" position="0 1.85 0" radius="0.28" color="#9d5cf6" metalness="0.7"
+                roughness="0.3"
+                animation__bob="property: position; from: 0 1.85 0; to: 0 2.15 0; dir: alternate; dur: 1800; loop: true; easing: easeInOutSine"></a-sphere>
+
+            <!-- Ojos izquierdo -->
+            <a-sphere position="-0.1 1.92 0.24" radius="0.055" color="#00ffe7"
+                animation__bob="property: position; from: -0.1 1.92 0.24; to: -0.1 2.22 0.24; dir: alternate; dur: 1800; loop: true; easing: easeInOutSine"
+                material="emissive: #00ffe7; emissiveIntensity: 1">
+            </a-sphere>
+            <!-- Ojos derecho -->
+            <a-sphere position="0.1 1.92 0.24" radius="0.055" color="#00ffe7"
+                animation__bob="property: position; from: 0.1 1.92 0.24; to: 0.1 2.22 0.24; dir: alternate; dur: 1800; loop: true; easing: easeInOutSine"
+                material="emissive: #00ffe7; emissiveIntensity: 1">
+            </a-sphere>
+
+            <!-- Hombros / brazos -->
+            <a-sphere position="-0.5 1.2 0" radius="0.18" color="#6d28d9" metalness="0.8"
+                animation__bob="property: position; from: -0.5 1.2 0; to: -0.5 1.5 0; dir: alternate; dur: 1800; loop: true; easing: easeInOutSine"></a-sphere>
+            <a-sphere position="0.5 1.2 0" radius="0.18" color="#6d28d9" metalness="0.8"
+                animation__bob="property: position; from: 0.5 1.2 0; to: 0.5 1.5 0; dir: alternate; dur: 1800; loop: true; easing: easeInOutSine"></a-sphere>
+
+            <!-- Brazos -->
+            <a-cylinder position="-0.55 0.8 0" radius="0.07" height="0.55" color="#5b21b6" rotation="0 0 15"
+                animation__bob="property: position; from: -0.55 0.8 0; to: -0.55 1.1 0; dir: alternate; dur: 1800; loop: true; easing: easeInOutSine"></a-cylinder>
+            <a-cylinder position="0.55 0.8 0" radius="0.07" height="0.55" color="#5b21b6" rotation="0 0 -15"
+                animation__bob="property: position; from: 0.55 0.8 0; to: 0.55 1.1 0; dir: alternate; dur: 1800; loop: true; easing: easeInOutSine"></a-cylinder>
+
+            <!-- Piernas -->
+            <a-cylinder position="-0.15 0.3 0" radius="0.1" height="0.6" color="#4c1d95"
+                animation__bob="property: position; from: -0.15 0.3 0; to: -0.15 0.6 0; dir: alternate; dur: 1800; loop: true; easing: easeInOutSine"></a-cylinder>
+            <a-cylinder position="0.15 0.3 0" radius="0.1" height="0.6" color="#4c1d95"
+                animation__bob="property: position; from: 0.15 0.3 0; to: 0.15 0.6 0; dir: alternate; dur: 1800; loop: true; easing: easeInOutSine"></a-cylinder>
+
+            <!-- Aura / halo animado -->
+            <a-torus position="0 1.1 0" radius="0.7" radius-tubular="0.03" color="#00ffe7"
+                material="emissive: #00ffe7; emissiveIntensity: 0.5; transparent: true; opacity: 0.6"
+                animation__spin="property: rotation; from: 90 0 0; to: 90 360 0; dur: 3000; loop: true; easing: linear"
+                animation__bob="property: position; from: 0 1.1 0; to: 0 1.4 0; dir: alternate; dur: 1800; loop: true; easing: easeInOutSine"></a-torus>
+            <a-torus position="0 1.1 0" radius="0.9" radius-tubular="0.02" color="#ff6b35"
+                material="emissive: #ff6b35; emissiveIntensity: 0.4; transparent: true; opacity: 0.4"
+                animation__spin="property: rotation; from: 70 30 0; to: 70 390 0; dur: 5000; loop: true; easing: linear"
+                animation__bob="property: position; from: 0 1.1 0; to: 0 1.4 0; dir: alternate; dur: 1800; loop: true; easing: easeInOutSine"></a-torus>
+
+            <!-- Luz propia del guardián -->
+            <a-light type="point" color="#7c3aed" intensity="2" distance="8" position="0 1.5 0"
+                animation="property: intensity; from: 1.5; to: 3; dir: alternate; dur: 1800; loop: true; easing: easeInOutSine">
+            </a-light>
+
+        </a-entity>
+
+        <!-- ══════════════════════════════════════════
+       CRISTALES ANIMADOS ALREDEDOR
+  ══════════════════════════════════════════ -->
+
+        <!-- Cristal 1 -->
+        <a-cone position="-4 0 -3" radius-bottom="0.3" radius-top="0.05" height="2.5" color="#00ffe7"
+            material="emissive: #00ffe7; emissiveIntensity: 0.3; transparent: true; opacity: 0.7; wireframe: false"
+            animation__spin="property: rotation; to: 0 360 0; dur: 6000; loop: true; easing: linear"
+            animation__float="property: position; from: -4 0 -3; to: -4 0.5 -3; dir: alternate; dur: 2200; loop: true; easing: easeInOutSine"></a-cone>
+        <a-cone position="-4 2.5 -3" radius-bottom="0.05" radius-top="0.3" height="2.5" color="#00ffe7"
+            material="emissive: #00ffe7; emissiveIntensity: 0.3; transparent: true; opacity: 0.7"
+            animation__spin="property: rotation; to: 0 360 0; dur: 6000; loop: true; easing: linear"
+            animation__float="property: position; from: -4 2.5 -3; to: -4 3 -3; dir: alternate; dur: 2200; loop: true; easing: easeInOutSine"></a-cone>
+
+        <!-- Cristal 2 -->
+        <a-cone position="4 0 -4" radius-bottom="0.25" radius-top="0.04" height="2" color="#ff6b35"
+            material="emissive: #ff6b35; emissiveIntensity: 0.4; transparent: true; opacity: 0.75"
+            animation__spin="property: rotation; to: 0 -360 0; dur: 5000; loop: true; easing: linear"
+            animation__float="property: position; from: 4 0 -4; to: 4 0.7 -4; dir: alternate; dur: 2600; loop: true; easing: easeInOutSine"></a-cone>
+        <a-cone position="4 2 -4" radius-bottom="0.04" radius-top="0.25" height="2" color="#ff6b35"
+            material="emissive: #ff6b35; emissiveIntensity: 0.4; transparent: true; opacity: 0.75"
+            animation__spin="property: rotation; to: 0 -360 0; dur: 5000; loop: true; easing: linear"
+            animation__float="property: position; from: 4 2 -4; to: 4 2.7 -4; dir: alternate; dur: 2600; loop: true; easing: easeInOutSine"></a-cone>
+
+        <!-- Cristal 3 (atrás izquierda) -->
+        <a-cone position="-6 0 -8" radius-bottom="0.4" radius-top="0.06" height="3.5" color="#c084fc"
+            material="emissive: #c084fc; emissiveIntensity: 0.35; transparent: true; opacity: 0.65"
+            animation__spin="property: rotation; to: 0 360 0; dur: 9000; loop: true; easing: linear"
+            animation__float="property: position; from: -6 0 -8; to: -6 0.4 -8; dir: alternate; dur: 3000; loop: true; easing: easeInOutSine"></a-cone>
+
+        <!-- ══════════════════════════════════════════
+       ESFERAS ORBITANDO AL GUARDIÁN
+  ══════════════════════════════════════════ -->
+        <a-entity position="0 1.3 -5"
+            animation="property: rotation; to: 0 360 0; dur: 4000; loop: true; easing: linear">
+            <a-sphere position="1.4 0 0" radius="0.18" color="#f59e0b"
+                material="emissive: #f59e0b; emissiveIntensity: 0.8">
+            </a-sphere>
+        </a-entity>
+
+        <a-entity position="0 1.3 -5"
+            animation="property: rotation; to: 0 -360 0; dur: 6000; loop: true; easing: linear">
+            <a-sphere position="0 0 1.8" radius="0.12" color="#34d399"
+                material="emissive: #34d399; emissiveIntensity: 0.8">
+            </a-sphere>
+        </a-entity>
+
+        <a-entity position="0 1.3 -5"
+            animation="property: rotation; from: 45 0 0; to: 45 360 0; dur: 7000; loop: true; easing: linear">
+            <a-sphere position="2 0 0" radius="0.1" color="#f472b6"
+                material="emissive: #f472b6; emissiveIntensity: 0.9">
+            </a-sphere>
+        </a-entity>
+
+        <!-- ══════════════════════════════════════════
+       PORTALES / ARCOS
+  ══════════════════════════════════════════ -->
+        <!-- Portal izquierdo -->
+        <a-entity position="-8 0 -10">
+            <a-torus radius="2" radius-tubular="0.12" color="#7c3aed"
+                material="emissive: #7c3aed; emissiveIntensity: 0.6"
+                animation="property: rotation; from: 0 0 0; to: 0 5 0; dir: alternate; dur: 4000; loop: true; easing: easeInOutSine">
+            </a-torus>
+            <!-- Interior del portal -->
+            <a-circle radius="1.85" color="#3b0764"
+                material="transparent: true; opacity: 0.5; emissive: #4c1d95; emissiveIntensity: 0.4; side: double">
+            </a-circle>
+            <a-light type="point" color="#7c3aed" intensity="2" distance="6"></a-light>
+        </a-entity>
+
+        <!-- Portal derecho -->
+        <a-entity position="8 0 -10">
+            <a-torus radius="2" radius-tubular="0.12" color="#00ffe7"
+                material="emissive: #00ffe7; emissiveIntensity: 0.6"
+                animation="property: rotation; from: 0 0 0; to: 0 -5 0; dir: alternate; dur: 3500; loop: true; easing: easeInOutSine">
+            </a-torus>
+            <a-circle radius="1.85" color="#003d3d"
+                material="transparent: true; opacity: 0.5; emissive: #006666; emissiveIntensity: 0.4; side: double">
+            </a-circle>
+            <a-light type="point" color="#00ffe7" intensity="2" distance="6"></a-light>
+        </a-entity>
+
+        <!-- ══════════════════════════════════════════
+       PARTÍCULAS FLOTANTES (cubos pequeños)
+  ══════════════════════════════════════════ -->
+
+        <!-- Se generan via JS -->
+        <a-entity id="particles"></a-entity>
+
+        <!-- ══════════════════════════════════════════
+       TORRES / ESTRUCTURAS DEL ESCENARIO
+  ══════════════════════════════════════════ -->
+        <!-- Torre izquierda lejana -->
+        <a-cylinder position="-12 0 -20" radius="0.8" height="16" color="#1a1a2e" metalness="0.6" roughness="0.4">
+        </a-cylinder>
+        <a-cylinder position="-12 8 -20" radius="1.1" height="0.5" color="#7c3aed"
+            material="emissive: #7c3aed; emissiveIntensity: 0.5">
+        </a-cylinder>
+        <a-light type="point" color="#7c3aed" intensity="3" distance="10" position="-12 9 -20"
+            animation="property: intensity; from: 2; to: 4; dir: alternate; dur: 1500; loop: true; easing: easeInOutSine">
+        </a-light>
+
+        <!-- Torre derecha lejana -->
+        <a-cylinder position="12 0 -20" radius="0.8" height="12" color="#1a1a2e" metalness="0.6" roughness="0.4">
+        </a-cylinder>
+        <a-cylinder position="12 6 -20" radius="1.1" height="0.5" color="#00ffe7"
+            material="emissive: #00ffe7; emissiveIntensity: 0.5">
+        </a-cylinder>
+        <a-light type="point" color="#00ffe7" intensity="3" distance="10" position="12 7 -20"
+            animation="property: intensity; from: 2; to: 4; dir: alternate; dur: 2000; loop: true; easing: easeInOutSine">
+        </a-light>
+
+        <!-- Torre central trasera -->
+        <a-cylinder position="0 0 -30" radius="1.5" height="20" color="#0d0d1a" metalness="0.7">
+        </a-cylinder>
+        <a-sphere position="0 10.5 -30" radius="1.8" color="#ff6b35"
+            material="emissive: #ff6b35; emissiveIntensity: 0.6; transparent: true; opacity: 0.85"
+            animation="property: scale; from: 1 1 1; to: 1.15 1.15 1.15; dir: alternate; dur: 2500; loop: true; easing: easeInOutSine">
+        </a-sphere>
+
+        <!-- ══════════════════════════════════════════
+       PLATAFORMAS FLOTANTES
+  ══════════════════════════════════════════ -->
+        <a-box position="-5 2.5 -12" width="3" height="0.3" depth="3" color="#1e1b4b" metalness="0.8"
+            animation="property: position; from: -5 2.5 -12; to: -5 3.2 -12; dir: alternate; dur: 3500; loop: true; easing: easeInOutSine">
+            <a-light type="point" color="#7c3aed" intensity="1" distance="4" position="0 0.5 0"></a-light>
+        </a-box>
+
+        <a-box position="5 1.8 -15" width="2.5" height="0.3" depth="2.5" color="#1e1b4b" metalness="0.8"
+            animation="property: position; from: 5 1.8 -15; to: 5 2.8 -15; dir: alternate; dur: 4200; loop: true; easing: easeInOutSine">
+            <a-light type="point" color="#00ffe7" intensity="1" distance="4" position="0 0.5 0"></a-light>
+        </a-box>
+
+        <a-box position="0 4 -18" width="4" height="0.3" depth="4" color="#1e1b4b" metalness="0.8"
+            animation="property: position; from: 0 4 -18; to: 0 5 -18; dir: alternate; dur: 5000; loop: true; easing: easeInOutSine">
+            <a-sphere position="0 0.8 0" radius="0.4" color="#f59e0b" material="emissive: #f59e0b; emissiveIntensity: 1"
+                animation="property: rotation; to: 0 360 0; dur: 2000; loop: true; easing: linear">
+            </a-sphere>
+        </a-box>
+
+        <!-- ══════════════════════════════════════════
+       LÍNEAS DE ENERGÍA EN EL SUELO
+  ══════════════════════════════════════════ -->
+        <!-- Líneas que se extienden desde el guardián -->
+        <a-cylinder position="0 0.01 -2.5" radius="0.04" height="5" rotation="90 0 0" color="#7c3aed"
+            material="emissive: #7c3aed; emissiveIntensity: 0.8; transparent: true; opacity: 0.7"
+            animation="property: material.opacity; from: 0.2; to: 0.9; dir: alternate; dur: 1000; loop: true">
+        </a-cylinder>
+        <a-cylinder position="-2 0.01 -5" radius="0.03" height="4" rotation="90 60 0" color="#00ffe7"
+            material="emissive: #00ffe7; emissiveIntensity: 0.8; transparent: true; opacity: 0.5"
+            animation="property: material.opacity; from: 0.1; to: 0.8; dir: alternate; dur: 1400; loop: true">
+        </a-cylinder>
+        <a-cylinder position="2 0.01 -5" radius="0.03" height="4" rotation="90 -60 0" color="#00ffe7"
+            material="emissive: #00ffe7; emissiveIntensity: 0.8; transparent: true; opacity: 0.5"
+            animation="property: material.opacity; from: 0.1; to: 0.8; dir: alternate; dur: 1200; loop: true">
+        </a-cylinder>
+    </a-scene>
+    <script src="script.js"></script>
+</body>
+
+</html>
