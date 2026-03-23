@@ -3,51 +3,366 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>3D Video Game - JS</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Laberinto 3D</title>
 </head>
 
 <body>
     <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            margin: 0;
             overflow: hidden;
-            font-family: sans-serif;
+            font-family: 'Segoe UI', sans-serif;
+            background: #000;
         }
 
+        #game-canvas { display: block; }
+
+        /* ===== Menú Principal ===== */
         #ui-layer {
             position: absolute;
-            width: 100%;
-            height: 100%;
+            width: 100%; height: 100%;
             display: flex;
             justify-content: center;
             align-items: center;
-            background: rgba(0, 0, 0, 0.7);
+            background: radial-gradient(ellipse at center, rgba(0,30,15,0.9) 0%, rgba(0,0,0,0.95) 100%);
             color: white;
             z-index: 10;
         }
 
-        #start-menu {
-            text-align: center;
+        #start-menu { text-align: center; max-width: 500px; }
+
+        #start-menu h1 {
+            font-size: 3rem;
+            color: #00ff88;
+            text-shadow: 0 0 30px rgba(0,255,136,0.5);
+            margin-bottom: 10px;
+            letter-spacing: 4px;
         }
 
-        button {
-            padding: 10px 20px;
+        #start-menu .subtitle {
+            color: #888;
+            margin-bottom: 25px;
+            font-size: 1rem;
+        }
+
+        .btn-start {
+            padding: 14px 40px;
             cursor: pointer;
-            font-size: 1.2rem;
+            font-size: 1.3rem;
+            background: #00ff88;
+            color: #000;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            letter-spacing: 2px;
+            transition: all 0.3s;
+        }
+        .btn-start:hover {
+            background: #00cc6a;
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(0,255,136,0.4);
         }
 
-        #game-canvas {
-            display: block;
+        /* Botones de dispositivo */
+        .device-buttons { display: flex; gap: 15px; justify-content: center; margin-bottom: 20px; }
+        .btn-device {
+            padding: 20px 30px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            background: rgba(255,255,255,0.05);
+            color: #ccc;
+            border: 2px solid rgba(255,255,255,0.15);
+            border-radius: 12px;
+            transition: all 0.3s;
+            text-align: center;
+            min-width: 180px;
         }
+        .btn-device:hover {
+            background: rgba(0,255,136,0.1);
+            border-color: #00ff88;
+            color: #fff;
+            transform: scale(1.05);
+        }
+        .btn-device .icon { font-size: 2.5rem; display: block; margin-bottom: 8px; }
+        .btn-device .label { font-weight: bold; font-size: 1rem; }
+        .btn-device .sublabel { font-size: 0.75rem; color: #888; margin-top: 4px; }
+
+        /* Selección de nivel */
+        .level-cards { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 20px; }
+        .btn-level {
+            padding: 15px 20px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            background: rgba(255,255,255,0.05);
+            color: #ccc;
+            border: 2px solid rgba(255,255,255,0.12);
+            border-radius: 10px;
+            transition: all 0.3s;
+            text-align: center;
+            min-width: 140px;
+        }
+        .btn-level:hover {
+            border-color: #00ff88;
+            background: rgba(0,255,136,0.1);
+            color: #fff;
+            transform: scale(1.05);
+        }
+        .btn-level .lvl-num { font-size: 1.8rem; font-weight: bold; color: #00ff88; }
+        .btn-level .lvl-name { font-size: 0.8rem; margin-top: 4px; }
+        .btn-level .lvl-diff { font-size: 0.7rem; color: #888; margin-top: 2px; }
+
+        .controls-info {
+            margin-top: 20px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 15px 25px;
+            text-align: left;
+            display: inline-block;
+        }
+        .controls-info h3 {
+            color: #00ff88;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .controls-info p {
+            color: #aaa;
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+        .controls-info kbd {
+            background: #333;
+            color: #fff;
+            padding: 2px 7px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            border: 1px solid #555;
+        }
+
+        .btn-back {
+            margin-top: 15px;
+            padding: 8px 20px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            background: transparent;
+            color: #888;
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+        .btn-back:hover { color: #fff; border-color: #fff; }
+
+        /* ===== HUD ===== */
+        #hud {
+            display: none;
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        #timer {
+            position: absolute;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #00ff88;
+            font-size: 1.5rem;
+            font-weight: bold;
+            text-shadow: 0 0 10px rgba(0,255,136,0.5);
+        }
+
+        #level-name {
+            position: absolute;
+            top: 45px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(255,255,255,0.4);
+            font-size: 0.8rem;
+        }
+
+        #minimap {
+            position: absolute;
+            bottom: 15px;
+            right: 15px;
+            border: 2px solid rgba(0,255,136,0.3);
+            border-radius: 8px;
+            opacity: 0.85;
+        }
+
+        #crosshair {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 20px; height: 20px;
+        }
+        #crosshair::before, #crosshair::after {
+            content: '';
+            position: absolute;
+            background: rgba(255,255,255,0.4);
+        }
+        #crosshair::before { width: 2px; height: 100%; left: 50%; transform: translateX(-50%); }
+        #crosshair::after { width: 100%; height: 2px; top: 50%; transform: translateY(-50%); }
+
+        #hud-hint {
+            position: absolute;
+            bottom: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(255,255,255,0.35);
+            font-size: 0.8rem;
+        }
+
+        #btn-menu {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            background: rgba(0,0,0,0.5);
+            color: #ccc;
+            border: 1px solid rgba(255,255,255,0.15);
+            padding: 6px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            pointer-events: all;
+            transition: background 0.2s;
+        }
+        #btn-menu:hover { background: rgba(255,255,255,0.15); }
+
+        /* ===== Pantalla de Victoria ===== */
+        #win-screen {
+            display: none;
+            position: absolute;
+            width: 100%; height: 100%;
+            justify-content: center;
+            align-items: center;
+            background: rgba(0,0,0,0.85);
+            z-index: 20;
+            text-align: center;
+            color: white;
+        }
+        #win-screen h1 {
+            font-size: 3rem;
+            color: #00ff88;
+            text-shadow: 0 0 40px rgba(0,255,136,0.7);
+            margin-bottom: 5px;
+        }
+        #win-screen .win-subtitle { font-size: 1rem; color: #888; margin-bottom: 5px; }
+        #win-screen .win-time { font-size: 1.4rem; color: #ccc; margin-bottom: 25px; }
+        #win-screen .btn-start { margin: 5px; }
+        .btn-secondary {
+            padding: 14px 40px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            background: #333;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            transition: all 0.3s;
+            margin: 5px;
+        }
+        .btn-secondary:hover { background: #555; transform: scale(1.05); }
     </style>
+
+    <!-- Menú principal -->
     <div id="ui-layer">
         <div id="start-menu">
-            <h1>MI VIDEOJUEGO 3D</h1>
-            <p>Conecta tu control y presiona cualquier botón</p>
-            <button onclick="startGame()">INICIAR JUEGO</button>
+            <h1>LABERINTO 3D</h1>
+            <p class="subtitle">Encuentra la salida antes de que sea tarde...</p>
+
+            <!-- Paso 1: Seleccionar dispositivo -->
+            <div id="device-select">
+                <p style="color:#aaa; margin-bottom: 15px; font-size: 0.9rem;">¿Cómo vas a jugar?</p>
+                <div class="device-buttons">
+                    <button class="btn-device" onclick="selectDevice('keyboard')">
+                        <span class="icon">💻</span>
+                        <span class="label">Laptop / PC</span>
+                        <span class="sublabel">Teclado + Mouse</span>
+                    </button>
+                    <button class="btn-device" onclick="selectDevice('xbox')">
+                        <span class="icon">🎮</span>
+                        <span class="label">Control Xbox</span>
+                        <span class="sublabel">Gamepad</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Paso 2: Seleccionar nivel + ver controles -->
+            <div id="main-menu" style="display: none;">
+                <p style="color:#aaa; margin-bottom: 12px; font-size: 0.9rem;">Selecciona un nivel:</p>
+                <div class="level-cards">
+                    <button class="btn-level" onclick="startLevel(0)">
+                        <div class="lvl-num">1</div>
+                        <div class="lvl-name">El Jardín Perdido</div>
+                        <div class="lvl-diff">Fácil — 11×11</div>
+                    </button>
+                    <button class="btn-level" onclick="startLevel(1)">
+                        <div class="lvl-num">2</div>
+                        <div class="lvl-name">Catacumbas Oscuras</div>
+                        <div class="lvl-diff">Medio — 15×15</div>
+                    </button>
+                    <button class="btn-level" onclick="startLevel(2)">
+                        <div class="lvl-num">3</div>
+                        <div class="lvl-name">La Fortaleza Final</div>
+                        <div class="lvl-diff">Difícil — 19×19</div>
+                    </button>
+                </div>
+
+                <!-- Controles para Laptop -->
+                <div id="controls-keyboard" class="controls-info" style="display:none;">
+                    <h3>Controles — Teclado + Mouse</h3>
+                    <p>
+                        <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> — Moverse<br>
+                        <kbd>←</kbd><kbd>→</kbd> — Girar &nbsp;|&nbsp; <kbd>↑</kbd><kbd>↓</kbd> — Avanzar/Retroceder<br>
+                        <strong>Mouse</strong> — Mirar (click para activar)<br>
+                        <kbd>ESC</kbd> — Menú
+                    </p>
+                </div>
+
+                <!-- Controles para Xbox -->
+                <div id="controls-xbox" class="controls-info" style="display:none;">
+                    <h3>Controles — Xbox Controller</h3>
+                    <p>
+                        <strong>Stick Izquierdo</strong> — Moverse (adelante/atrás/strafe)<br>
+                        <strong>Stick Derecho</strong> — Mirar / Girar cámara<br>
+                        <strong>B</strong> — Volver al menú<br>
+                        <strong>Start (☰)</strong> — Volver al menú
+                    </p>
+                </div>
+
+                <br>
+                <button class="btn-back" onclick="backToDeviceSelect()">← Cambiar dispositivo</button>
+            </div>
         </div>
     </div>
+
+    <!-- HUD del juego -->
+    <div id="hud">
+        <button id="btn-menu" onclick="returnToMenu()">☰ MENÚ</button>
+        <div id="timer">0.0s</div>
+        <div id="level-name"></div>
+        <canvas id="minimap" width="150" height="150"></canvas>
+        <div id="crosshair"></div>
+        <div id="hud-hint">Click para capturar el mouse | ESC para salir</div>
+    </div>
+
+    <!-- Pantalla de victoria -->
+    <div id="win-screen">
+        <div>
+            <h1>¡ESCAPASTE!</h1>
+            <p class="win-subtitle" id="win-level-name"></p>
+            <p class="win-time">Tiempo: <span id="win-time">0</span> segundos</p>
+            <button class="btn-start" id="btn-next-level" onclick="nextLevel()" style="display:none;">NIVEL 2 →</button>
+            <button class="btn-secondary" onclick="restartLevel()">REINTENTAR</button>
+            <button class="btn-secondary" onclick="returnToMenu()">MENÚ</button>
+        </div>
+    </div>
+
     <canvas id="game-canvas"></canvas>
 
     <audio id="hit-sound" src="https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3"></audio>
