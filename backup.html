@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Campo Primaveral Definitivo 3D</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+        
+        body { margin: 0; overflow: hidden; font-family: 'Poppins', sans-serif; user-select: none; }
+        
+        /* Interfaz estilo Glassmorphism */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            color: white;
+        }
+
+        #instrucciones {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            padding: 40px; text-align: center; cursor: pointer; z-index: 10;
+            transition: opacity 0.3s;
+        }
+        #instrucciones h1 { margin: 0 0 10px 0; font-size: 2.5rem; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+        #instrucciones p { margin: 5px 0; font-size: 1rem; color: #e0e0e0; }
+        .btn-start {
+            margin-top: 20px; padding: 10px 30px; font-size: 1.2rem; font-weight: bold;
+            background: linear-gradient(135deg, #66bb6a, #43a047); border: none;
+            border-radius: 30px; color: white; cursor: pointer; transition: transform 0.2s;
+        }
+        .btn-start:hover { transform: scale(1.05); }
+
+        #ui-top {
+            position: absolute; top: 20px; right: 20px; padding: 15px 25px;
+            display: flex; align-items: center; gap: 15px; font-size: 1.5rem; font-weight: 600;
+        }
+        #ui-bottom {
+            position: absolute; bottom: 20px; left: 20px; padding: 15px 25px;
+            font-size: 1.1rem;
+        }
+        
+        #crosshair {
+            position: absolute; top: 50%; left: 50%; width: 10px; height: 10px;
+            background: rgba(255,255,255,0.8); border-radius: 50%;
+            transform: translate(-50%, -50%); pointer-events: none; display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="instrucciones" class="glass-panel">
+        <h1>🌸 Valle Primaveral</h1>
+        <p>Explora un ecosistema vivo generado por matemáticas.</p>
+        <p style="font-size: 0.9em; margin-top:15px;">🎮 <b>W A S D</b> para caminar | 🖱️ <b>Mouse</b> para mirar | 🖱️ <b>Clic</b> para plantar</p>
+        <button class="btn-start">ENTRAR AL MUNDO</button>
+    </div>
+
+    <div id="ui-top" class="glass-panel">
+        <span id="icono-clima">☀️</span> <span id="hora">08:00</span>
+    </div>
+    
+    <div id="ui-bottom" class="glass-panel">
+        🌱 Flores plantadas: <b id="contador">0</b>
+    </div>
+
+    <div id="crosshair"></div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
+
+        // --- 1. CONFIGURACIÓN DEL MUNDO ---
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x87CEEB, 0.015);
+
+        const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 1.6, 0); // Altura realista humana
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Sombras muy suaves
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.0;
+        document.body.appendChild(renderer.domElement);
+
+        // --- 2. ILUMINACIÓN DINÁMICA ---
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
+        scene.add(ambientLight);
+
+        const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.4);
+        scene.add(hemiLight);
+
+        const sunLight = new THREE.DirectionalLight(0xffffff, 1.5);
+        sunLight.castShadow = true;
+        sunLight.shadow.mapSize.set(2048, 2048); // Alta resolución de sombras
+        sunLight.shadow.camera.near = 0.5;
+        sunLight.shadow.camera.far = 150;
+        sunLight.shadow.camera.left = -50;
+        sunLight.shadow.camera.right = 50;
+        sunLight.shadow.camera.top = 50;
+        sunLight.shadow.camera.bottom = -50;
+        sunLight.shadow.bias = -0.0005; // Evitar artefactos de sombra
+        scene.add(sunLight);
+
+        const sunSphere = new THREE.Mesh(
+            new THREE.SphereGeometry(4, 32, 32),
+            new THREE.MeshBasicMaterial({ color: 0xffffee })
+        );
+        scene.add(sunSphere);
+
+        // Estrellas (solo visibles de noche)
+        const starsGeo = new THREE.BufferGeometry();
+        const starsPos = new Float32Array(1000 * 3);
+        for(let i=0; i<3000; i++) starsPos[i] = (Math.random() - 0.5) * 400;
+        starsGeo.setAttribute('position', new THREE.BufferAttribute(starsPos, 3));
+        const stars = new THREE.Points(starsGeo, new THREE.PointsMaterial({color: 0xffffff, size: 0.5, transparent: true}));
+        scene.add(stars);
+
+        // --- 3. CONSTRUCCIÓN DEL ENTORNO (Geometrías Complejas) ---
+        
+        // Suelo texturizado por color
+        const groundGeo = new THREE.PlaneGeometry(300, 300, 64, 64);
+        // Desnivelar un poco el terreno para que no sea perfectamente plano
+        const posAtrib = groundGeo.attributes.position;
+        for(let i=0; i<posAtrib.count; i++) {
+            posAtrib.setZ(i, Math.sin(posAtrib.getX(i)*0.1) * Math.cos(posAtrib.getY(i)*0.1) * 0.5);
+        }
+        groundGeo.computeVertexNormals();
+        const groundMat = new THREE.MeshStandardMaterial({ color: 0x41752b, roughness: 0.9, metalness: 0.1 });
+        const ground = new THREE.Mesh(groundGeo, groundMat);
+        ground.rotation.x = -Math.PI / 2;
+        ground.receiveShadow = true;
+        scene.add(ground);
+
+        // Función: Hierba decorativa (Racimos de triángulos)
+        function createGrassTuft(x, z) {
+            const tuft = new THREE.Group();
+            const bladeGeo = new THREE.ConeGeometry(0.05, 0.4, 3);
+            bladeGeo.translate(0, 0.2, 0); // Ajustar pivote a la base
+            const bladeMat = new THREE.MeshStandardMaterial({color: 0x558b2f, roughness: 0.8});
+            
+            for(let i=0; i<5; i++) {
+                const blade = new THREE.Mesh(bladeGeo, bladeMat);
+                blade.rotation.x = (Math.random() - 0.5) * 0.5;
+                blade.rotation.z = (Math.random() - 0.5) * 0.5;
+                blade.rotation.y = Math.random() * Math.PI;
+                tuft.add(blade);
+            }
+            tuft.position.set(x, 0, z);
+            scene.add(tuft);
+        }
+        for(let i=0; i<300; i++) createGrassTuft(Math.random()*150-75, Math.random()*150-75);
+
+        // Función: Flores Detalladas (Tallo, Pistilo, Pétalos)
+        function createDetailedFlower(x, z, scale = 1) {
+            const flower = new THREE.Group();
+            
+            // Tallo
+            const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.04, 0.6, 8), new THREE.MeshStandardMaterial({color: 0x33691e}));
+            stem.position.y = 0.3;
+            stem.castShadow = true;
+            flower.add(stem);
+
+            // Pistilo (Centro)
+            const center = new THREE.Mesh(new THREE.SphereGeometry(0.12, 16, 16), new THREE.MeshStandardMaterial({color: 0xffb300}));
+            center.position.y = 0.6;
+            flower.add(center);
+
+            // Pétalos
+            const colors = [0xff5252, 0x448aff, 0xe040fb, 0xffeb3b, 0xffffff];
+            const pColor = colors[Math.floor(Math.random() * colors.length)];
+            const petalMat = new THREE.MeshStandardMaterial({color: pColor, roughness: 0.4, side: THREE.DoubleSide});
+            const numPetals = 6;
+            
+            for(let i=0; i<numPetals; i++) {
+                // Un pétalo es una esfera aplastada
+                const petalGeo = new THREE.SphereGeometry(0.15, 16, 16);
+                petalGeo.scale(1, 0.2, 2.5); // Aplastar y alargar
+                petalGeo.translate(0, 0, 0.3); // Alejar del centro
+                const petal = new THREE.Mesh(petalGeo, petalMat);
+                petal.position.y = 0.6;
+                petal.rotation.y = (i / numPetals) * Math.PI * 2;
+                petal.rotation.x = 0.2; // Inclinación natural
+                petal.castShadow = true;
+                flower.add(petal);
+            }
+            
+            flower.position.set(x, 0, z);
+            flower.scale.set(scale, scale, scale);
+            scene.add(flower);
+            return flower;
+        }
+        for(let i=0; i<150; i++) createDetailedFlower(Math.random()*100-50, Math.random()*100-50, 0.5 + Math.random()*0.5);
+
+        // Función: Árbol Frondoso Estilo Ghibli
+        function createLeafyTree(x, z) {
+            const tree = new THREE.Group();
+            
+            // Tronco texturizado
+            const trunkMat = new THREE.MeshStandardMaterial({color: 0x5d4037, roughness: 1.0});
+            const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.6, 3, 12), trunkMat);
+            trunk.position.y = 1.5;
+            trunk.castShadow = true;
+            tree.add(trunk);
+
+            // Copa de hojas (Agrupación de esferas para dar volumen)
+            const leavesGroup = new THREE.Group();
+            const leafColors = [0x2e7d32, 0x388e3c, 0x4caf50];
+            const lColor = leafColors[Math.floor(Math.random() * leafColors.length)];
+            const leafMat = new THREE.MeshStandardMaterial({color: lColor, roughness: 0.9});
+
+            const positions = [ [0,3,0], [1,2.5,0.5], [-1,2.8,-0.5], [0.5,3.5,-1], [-0.5,2.5,1] ];
+            positions.forEach(pos => {
+                const puff = new THREE.Mesh(new THREE.DodecahedronGeometry(1.5 + Math.random()*0.5, 1), leafMat);
+                puff.position.set(pos[0], pos[1]+1, pos[2]);
+                puff.castShadow = true;
+                leavesGroup.add(puff);
+            });
+            tree.add(leavesGroup);
+            
+            // Variación de tamaño y rotación
+            tree.position.set(x, 0, z);
+            tree.rotation.y = Math.random() * Math.PI;
+            const scale = 0.8 + Math.random() * 0.6;
+            tree.scale.set(scale, scale, scale);
+            scene.add(tree);
+        }
+        for(let i=0; i<60; i++) createLeafyTree(Math.random()*160-80, Math.random()*160-80);
+
+        // Función: Abejas Realistas con Animación de Alas
+        const bees = [];
+        function createDetailedBee() {
+            const bee = new THREE.Group();
+            
+            // Cuerpo (Capsula amarilla)
+            const bodyMat = new THREE.MeshStandardMaterial({color: 0xffc107, roughness: 0.5});
+            const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.12, 0.25, 8, 16), bodyMat);
+            body.rotation.z = Math.PI / 2; // Acostada
+            bee.add(body);
+
+            // Franjas negras (Toroides)
+            const blackMat = new THREE.MeshStandardMaterial({color: 0x111111, roughness: 0.8});
+            for(let i=-1; i<=1; i+=2) {
+                const stripe = new THREE.Mesh(new THREE.TorusGeometry(0.125, 0.03, 8, 16), blackMat);
+                stripe.position.x = i * 0.08;
+                stripe.rotation.y = Math.PI / 2;
+                bee.add(stripe);
+            }
+
+            // Cabeza
+            const head = new THREE.Mesh(new THREE.SphereGeometry(0.1), blackMat);
+            head.position.x = 0.25;
+            bee.add(head);
+
+            // Alas (Planos traslúcidos)
+            const wingMat = new THREE.MeshStandardMaterial({color: 0xffffff, transparent: true, opacity: 0.4, side: THREE.DoubleSide});
+            const wingGeo = new THREE.PlaneGeometry(0.3, 0.2);
+            wingGeo.translate(0, 0.1, 0); // Ajustar pivote para que aleteen desde la base
+            
+            const wingL = new THREE.Mesh(wingGeo, wingMat);
+            wingL.position.set(0, 0.1, 0.05);
+            wingL.rotation.x = Math.PI / 2;
+            
+            const wingR = new THREE.Mesh(wingGeo, wingMat);
+            wingR.position.set(0, 0.1, -0.05);
+            wingR.rotation.x = -Math.PI / 2;
+
+            bee.add(wingL, wingR);
+            bee.castShadow = true;
+
+            // Datos para animación
+            bee.userData = {
+                wingL: wingL, wingR: wingR,
+                speed: 0.05 + Math.random() * 0.05,
+                angle: Math.random() * Math.PI * 2,
+                heightOffset: Math.random() * Math.PI,
+                center: new THREE.Vector3(Math.random()*40-20, 2, Math.random()*40-20)
+            };
+            
+            bee.position.copy(bee.userData.center);
+            scene.add(bee);
+            bees.push(bee);
+        }
+        for(let i=0; i<15; i++) createDetailedBee();
+
+        // --- 4. POLEN Y EFECTOS VISUALES ---
+        const pollenGeo = new THREE.BufferGeometry();
+        const pCount = 500;
+        const pPos = new Float32Array(pCount * 3);
+        for(let i=0; i<pCount*3; i++) pPos[i] = (Math.random()-0.5)*150;
+        pollenGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+        
+        // Crear textura de partícula circular procedural con canvas
+        const canvas = document.createElement('canvas');
+        canvas.width = 16; canvas.height = 16;
+        const ctx = canvas.getContext('2d');
+        ctx.beginPath();
+        ctx.arc(8, 8, 8, 0, Math.PI * 2);
+        ctx.fillStyle = "white";
+        ctx.fill();
+        const pollenTex = new THREE.CanvasTexture(canvas);
+
+        const pollenMat = new THREE.PointsMaterial({ 
+            color: 0xffeaa7, size: 0.3, map: pollenTex, 
+            transparent: true, opacity: 0.6, depthWrite: false 
+        });
+        const pollenSystem = new THREE.Points(pollenGeo, pollenMat);
+        scene.add(pollenSystem);
+
+        // --- 5. CONTROLES Y JUGABILIDAD ---
+        const controls = new PointerLockControls(camera, document.body);
+        const btnStart = document.querySelector('.btn-start');
+        const overlay = document.getElementById('instrucciones');
+        const crosshair = document.getElementById('crosshair');
+
+        btnStart.addEventListener('click', () => controls.lock());
+        controls.addEventListener('lock', () => { overlay.style.opacity = '0'; setTimeout(()=> overlay.style.display = 'none', 300); crosshair.style.display = 'block'; });
+        controls.addEventListener('unlock', () => { overlay.style.display = 'block'; setTimeout(()=> overlay.style.opacity = '1', 10); crosshair.style.display = 'none'; });
+
+        let moveF = false, moveB = false, moveL = false, moveR = false;
+        document.addEventListener('keydown', (e) => {
+            if(e.code === 'KeyW') moveF = true; if(e.code === 'KeyS') moveB = true;
+            if(e.code === 'KeyA') moveL = true; if(e.code === 'KeyD') moveR = true;
+        });
+        document.addEventListener('keyup', (e) => {
+            if(e.code === 'KeyW') moveF = false; if(e.code === 'KeyS') moveB = false;
+            if(e.code === 'KeyA') moveL = false; if(e.code === 'KeyD') moveR = false;
+        });
+
+        // Plantar flores
+        let fCount = 0;
+        const plantedFlowers = [];
+        document.addEventListener('mousedown', (e) => {
+            if(controls.isLocked && e.button === 0) {
+                // Proyectar un rayo desde el centro de la cámara hacia abajo
+                const flower = createDetailedFlower(camera.position.x, camera.position.z, 0);
+                plantedFlowers.push(flower);
+                fCount++;
+                document.getElementById('contador').innerText = fCount;
+                
+                // Efecto de empuje (Head bob)
+                camera.position.y -= 0.1;
+                setTimeout(() => camera.position.y += 0.1, 100);
+            }
+        });
+
+        // --- 6. GESTIÓN DEL TIEMPO Y COLORES ---
+        let timeOfDay = 8; // Empezamos a las 08:00 AM
+        const clockUI = document.getElementById('hora');
+        const iconUI = document.getElementById('icono-clima');
+
+        // Paletas de colores [Cielo, Niebla, Luz Ambiente, Luz Sol]
+        const cDawn = { sky: new THREE.Color(0xffb7b2), fog: new THREE.Color(0xffb7b2), amb: new THREE.Color(0xaa5555), sun: new THREE.Color(0xff8844) };
+        const cDay =  { sky: new THREE.Color(0x87CEEB), fog: new THREE.Color(0xaaccff), amb: new THREE.Color(0xffffff), sun: new THREE.Color(0xffffee) };
+        const cDusk = { sky: new THREE.Color(0xff7b54), fog: new THREE.Color(0xcc6655), amb: new THREE.Color(0x663344), sun: new THREE.Color(0xff5522) };
+        const cNight = { sky: new THREE.Color(0x050515), fog: new THREE.Color(0x0a0a2a), amb: new THREE.Color(0x111133), sun: new THREE.Color(0x223355) };
+
+        // --- 7. BUCLE DE RENDERIZADO Y FÍSICAS ---
+        const clock = new THREE.Clock();
+        const velocity = new THREE.Vector3();
+        const direction = new THREE.Vector3();
+        let walkBob = 0;
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const delta = clock.getDelta();
+            const elapsed = clock.getElapsedTime();
+
+            // LÓGICA DE DÍA/NOCHE (1 segundo real = 10 minutos de juego)
+            timeOfDay += delta * (10 / 60); 
+            if(timeOfDay >= 24) timeOfDay = 0;
+
+            const h = Math.floor(timeOfDay);
+            const m = Math.floor((timeOfDay % 1) * 60);
+            clockUI.innerText = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+
+            // Interpolar colores según la hora
+            let tFade = 0;
+            let currentColors, nextColors;
+            
+            if(timeOfDay >= 5 && timeOfDay < 8) { // Amanecer
+                tFade = (timeOfDay - 5) / 3; currentColors = cNight; nextColors = cDawn; iconUI.innerText = "🌅"; stars.material.opacity = 1 - tFade;
+            } else if(timeOfDay >= 8 && timeOfDay < 17) { // Día
+                tFade = (timeOfDay - 8) / 9; currentColors = cDawn; nextColors = cDay; iconUI.innerText = "☀️"; stars.material.opacity = 0;
+            } else if(timeOfDay >= 17 && timeOfDay < 20) { // Atardecer
+                tFade = (timeOfDay - 17) / 3; currentColors = cDay; nextColors = cDusk; iconUI.innerText = "🌇"; stars.material.opacity = tFade * 0.5;
+            } else { // Noche
+                let hourAdjusted = timeOfDay >= 20 ? timeOfDay : timeOfDay + 24;
+                tFade = (hourAdjusted - 20) / 9; currentColors = cDusk; nextColors = cNight; iconUI.innerText = "🌃"; stars.material.opacity = 1;
+            }
+
+            scene.background = currentColors.sky.clone().lerp(nextColors.sky, tFade);
+            scene.fog.color.copy(scene.background);
+            ambientLight.color = currentColors.amb.clone().lerp(nextColors.amb, tFade);
+            sunLight.color = currentColors.sun.clone().lerp(nextColors.sun, tFade);
+
+            // Posición del sol (Arco sobre el cielo)
+            const sunAngle = ((timeOfDay - 6) / 12) * Math.PI; // 6 AM = 0, 6 PM = PI
+            const sunRadius = 100;
+            sunSphere.position.set(Math.cos(sunAngle) * sunRadius, Math.sin(sunAngle) * sunRadius, -50);
+            sunLight.position.copy(sunSphere.position);
+            
+            // Apagar luces y sombras de noche para rendimiento y realismo
+            sunLight.intensity = Math.max(0.1, Math.sin(sunAngle) * 2.0);
+            sunSphere.material.color.copy(sunLight.color);
+
+            // ANIMACIÓN DE ABEJAS (Vuelo + Aleteo)
+            bees.forEach(bee => {
+                // Vuelo orgánico con curvas de Lissajous
+                const t = elapsed * bee.userData.speed;
+                bee.position.x = bee.userData.center.x + Math.sin(t) * 5;
+                bee.position.z = bee.userData.center.z + Math.cos(t * 0.8) * 5;
+                bee.position.y = 2 + Math.sin(t * 3 + bee.userData.heightOffset) * 0.5;
+                
+                // Orientar la abeja hacia donde vuela
+                bee.lookAt(bee.position.x + Math.cos(t)*0.1, bee.position.y, bee.position.z - Math.sin(t*0.8)*0.1);
+
+                // Aleteo rápido de alas (Eje Z local por la rotación del plano)
+                const flap = Math.sin(elapsed * 80) * 0.5; 
+                bee.userData.wingL.rotation.y = flap;
+                bee.userData.wingR.rotation.y = -flap;
+            });
+
+            // ANIMACIÓN DEL POLEN
+            const pos = pollenSystem.geometry.attributes.position.array;
+            for(let i=1; i<pos.length; i+=3) {
+                pos[i] -= 0.5 * delta; // Caída suave
+                pos[i-1] += Math.sin(elapsed + pos[i]) * 0.01; // Balanceo X
+                if(pos[i] < 0) pos[i] = 20;
+            }
+            pollenSystem.geometry.attributes.position.needsUpdate = true;
+
+            // CRECIMIENTO DE FLORES PLANTADAS
+            plantedFlowers.forEach(f => { 
+                if(f.scale.x < 1.2) {
+                    const s = f.scale.x + (delta * 2); // Crecimiento rápido y elástico
+                    f.scale.set(s, s, s); 
+                }
+            });
+
+            // FÍSICAS DEL JUGADOR
+            if (controls.isLocked) {
+                // Fricción
+                velocity.x -= velocity.x * 10.0 * delta;
+                velocity.z -= velocity.z * 10.0 * delta;
+
+                direction.z = Number(moveF) - Number(moveB);
+                direction.x = Number(moveR) - Number(moveL);
+                direction.normalize();
+
+                const speed = 40.0;
+                if (moveF || moveB) velocity.z -= direction.z * speed * delta;
+                if (moveL || moveR) velocity.x -= direction.x * speed * delta;
+
+                controls.moveRight(-velocity.x * delta);
+                controls.moveForward(-velocity.z * delta);
+
+                // Bobbing (movimiento de cámara al caminar)
+                if(moveF || moveB || moveL || moveR) {
+                    walkBob += delta * 10;
+                    camera.position.y = 1.6 + Math.abs(Math.sin(walkBob)) * 0.1;
+                } else {
+                    walkBob = 0;
+                    camera.position.y += (1.6 - camera.position.y) * 0.1; // Suavizar vuelta al centro
+                }
+                
+                // Límites del mapa
+                if(camera.position.x > 140) camera.position.x = 140;
+                if(camera.position.x < -140) camera.position.x = -140;
+                if(camera.position.z > 140) camera.position.z = 140;
+                if(camera.position.z < -140) camera.position.z = -140;
+            }
+
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // Responsive
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>

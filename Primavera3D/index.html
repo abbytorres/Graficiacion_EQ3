@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Valle Primaveral Modular</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+        body { margin: 0; overflow: hidden; font-family: 'Poppins', sans-serif; user-select: none; }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 20px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3); color: white;
+        }
+        #instrucciones {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            padding: 40px; text-align: center; cursor: pointer; z-index: 10; transition: opacity 0.3s;
+        }
+        #instrucciones h1 { margin: 0 0 10px 0; font-size: 2.5rem; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+        #instrucciones p { margin: 5px 0; font-size: 1rem; color: #e0e0e0; }
+        .btn-start {
+            margin-top: 20px; padding: 10px 30px; font-size: 1.2rem; font-weight: bold;
+            background: linear-gradient(135deg, #66bb6a, #43a047); border: none;
+            border-radius: 30px; color: white; cursor: pointer; transition: transform 0.2s;
+        }
+        .btn-start:hover { transform: scale(1.05); }
+        #ui-top { position: absolute; top: 20px; right: 20px; padding: 15px 25px; display: flex; align-items: center; gap: 15px; font-size: 1.5rem; font-weight: 600; }
+        #ui-bottom { position: absolute; bottom: 20px; left: 20px; padding: 15px 25px; font-size: 1.1rem; }
+        #crosshair {
+            position: absolute; top: 50%; left: 50%; width: 10px; height: 10px;
+            background: rgba(255,255,255,0.8); border-radius: 50%;
+            transform: translate(-50%, -50%); pointer-events: none; display: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="instrucciones" class="glass-panel">
+        <h1>🌸 Valle Modular</h1>
+        <p>🎮 <b>W A S D</b>: Caminar | 🖱️ <b>Mouse</b>: Mirar | 🖱️ <b>Clic</b>: Plantar al frente</p>
+        <button class="btn-start">ENTRAR AL MUNDO</button>
+    </div>
+    <div id="ui-top" class="glass-panel"><span id="icono-clima">☀️</span> <span id="hora">08:00</span></div>
+    <div id="ui-bottom" class="glass-panel">🌱 Flores plantadas: <b id="contador">0</b></div>
+    <div id="crosshair"></div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+    
+    <script type="module" src="./main.js"></script>
+</body>
+</html>
