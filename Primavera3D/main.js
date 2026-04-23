@@ -141,3 +141,18 @@ function animate() {
     renderer.render(scene, camera);
 }
 animate();
+
+// Botón iniciar
+const music = document.getElementById("bgMusic");
+
+document.querySelectorAll(".btn-start").forEach(btn => {
+    btn.addEventListener("click", () => {
+        // 🎮 entrar al juego
+        controls.lock();
+
+        // 🔊 sonido
+        music.volume = 0.5;
+        music.currentTime = 0;
+        music.play();
+    });
+});
